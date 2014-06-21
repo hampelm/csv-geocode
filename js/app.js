@@ -10,10 +10,12 @@ define([
   'shp',
   'dropzone',
 
-  'settings'
+  'settings',
+
+  'text!templates/row.html'
 ],
 
-function($, _, Backbone, L, shp, Dropzone, settings) {
+function($, _, Backbone, L, shp, Dropzone, settings, row) {
   'use strict';
 
   var App = {};
@@ -39,7 +41,12 @@ function($, _, Backbone, L, shp, Dropzone, settings) {
 
 
   App.setupMapEditor = function(layer) {
+    if (App.drawControl) {
+      App.map.removeControl(App.drawControl);
+    }
+
     App.drawControl = new L.Control.Draw({
+      draw: false,
       edit: {
         featureGroup: layer
       }
@@ -59,19 +66,28 @@ function($, _, Backbone, L, shp, Dropzone, settings) {
 
 
   App.editFeature = function(event) {
-    console.log(event.layer);
-    App.setupMapEditor(event.layer);
+    App.setupMapEditor(event.target);
+    App.map.fitBounds(event.target.getBounds());
+  };
+
+
+  App.addRow = function(feature) {
+  };
+
+
+  App.addFeature = function(feature) {
+    var geoJsonLayer = L.geoJson(feature).addTo(App.map);
+    geoJsonLayer.on('click', App.editFeature);
+    console.log(row);
+    $('table').append(_.template(row, feature));
   };
 
 
   App.readShapefile = function(event) {
-    var geoJsonLayer = L.geoJson().addTo(App.map);
-    shp(event.target.result).then(function(data){
+    shp(event.target.result).then(function(data) {
       console.log("Got data!", data);
-      geoJsonLayer.addData(data);
+      _.each(data.features, App.addFeature);
     });
-
-    geoJsonLayer.on('click', App.editFeature);
   };
 
 
