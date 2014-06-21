@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title></title>
+  <title>LocalData Edit</title>
   <script data-main="js/main" src="js/lib/require.js"></script>
-  <link rel="stylesheet" type="text/css" href="css/app.css">
-  <link rel="stylesheet" type="text/css" href="js/lib/leaflet/leaflet.css">
+  <style type="text/css" media="all">
+    @import url("css/app.css");
+    @import url("js/lib/leaflet/leaflet.css");
+    @import url("js/lib/leaflet.draw/leaflet.draw.css");
+  </style>
 </head>
 <body>
-
-<h1>Hello world</h1>
-<div id="map"></div>
-
+  <div class="container">
+    <div id="sidebar">
+      <div id="holder">Drag shapefile here</div>
+    </div>
+    <div id="map"></div>
+  </div>
 </body>
 </html>

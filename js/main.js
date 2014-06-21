@@ -5,6 +5,7 @@ require.config({
   paths: {
     async: 'lib/async',
     backbone: 'lib/backbone',
+    dropzone: 'lib/dropzone',
     jquery: 'lib/jquery',
     moment: 'lib/moment.min',
     shp: 'lib/shp',
@@ -14,6 +15,11 @@ require.config({
 
   shim: {
     'lib/leaflet/leaflet': {
+      exports: 'L'
+    },
+
+    'lib/leaflet.draw/leaflet.draw': {
+      deps: ['lib/leaflet/leaflet'],
       exports: 'L'
     }
   }
