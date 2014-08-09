@@ -8,7 +8,6 @@ require.config({
     dropzone: 'lib/dropzone',
     jquery: 'lib/jquery',
     moment: 'lib/moment.min',
-    shp: 'lib/shp',
     text: 'lib/text',
     underscore: 'lib/underscore'
   },
@@ -16,6 +15,10 @@ require.config({
   shim: {
     'lib/leaflet/leaflet': {
       exports: 'L'
+    },
+
+    'lib/papaparse': {
+      exports: 'Papa'
     },
 
     'lib/leaflet.draw/leaflet.draw': {

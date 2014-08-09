@@ -7,7 +7,7 @@ define([
   'underscore',
   'backbone',
   'lib/leaflet.draw/leaflet.draw',
-  'shp',
+  'lib/papaparse',
   'dropzone',
 
   'settings',
@@ -15,10 +15,15 @@ define([
   'text!templates/row.html'
 ],
 
-function($, _, Backbone, L, shp, Dropzone, settings, row) {
+function($, _, Backbone, L, Papa, Dropzone, settings, rowTemplate) {
   'use strict';
 
+  // Hardcoded maximum number of geocodes to run
+  var LIMIT = 50;
+
   var App = {};
+  App.base = 'http://api.tiles.mapbox.com/v4/geocode/mapbox.places-v1/';
+  App.token = 'pk.eyJ1IjoibWF0dGgiLCJhIjoicGFzV1ZkWSJ9.KeK3hKmM52XpUEHHx_F8NQ';
 
   // Kick off the LocalData app
   App.initialize = function() {
@@ -28,7 +33,6 @@ function($, _, Backbone, L, shp, Dropzone, settings, row) {
     App.setupMap();
   };
 
-
   App.setupMap = function() {
     // Set up the map
     App.map = new L.map('map', {
@@ -36,24 +40,8 @@ function($, _, Backbone, L, shp, Dropzone, settings, row) {
       center: [42.400712,-83.118876]
     });
     L.tileLayer(settings.baseLayer).addTo(App.map);
-
+    App.layers = L.geoJson().addTo(App.map);
   };
-
-
-  App.setupMapEditor = function(layer) {
-    if (App.drawControl) {
-      App.map.removeControl(App.drawControl);
-    }
-
-    App.drawControl = new L.Control.Draw({
-      draw: false,
-      edit: {
-        featureGroup: layer
-      }
-    });
-    App.map.addControl(App.drawControl);
-  };
-
 
   App.setupDragdrop = function() {
     var holder = document.getElementById('holder');
@@ -64,40 +52,62 @@ function($, _, Backbone, L, shp, Dropzone, settings, row) {
     holder.ondrop = App.readFile;
   };
 
+  App.addRow = function(feature, row) {
+    var context = {
+      address: row.address,
+      codedAddress: 'unable to geocode',
+      relevance: 0
+    };
 
-  App.editFeature = function(event) {
-    App.setupMapEditor(event.target);
-    App.map.fitBounds(event.target.getBounds());
+    // If we have geodata...
+    var first = feature.features[0];
+    if (first) {
+      context.codedAddress = first.place_name;
+      context.relevance = first.relevance;
+    }
+
+    $('table').append(_.template(rowTemplate, context));
   };
 
+  App.addFeature = function(feature, row) {
+    console.log(feature, row);
+    var first = feature.features[0];
+    if (!first) { return; }
 
-  App.addRow = function(feature) {
+    App.layers.addData(first);
+    App.map.fitBounds(App.layers.getBounds());
   };
 
-
-  App.addFeature = function(feature) {
-    var geoJsonLayer = L.geoJson(feature).addTo(App.map);
-    geoJsonLayer.on('click', App.editFeature);
-    console.log(row);
-    $('table').append(_.template(row, feature));
+  App.makeURL = function(address) {
+    return App.base + address + '.json?access_token=' + App.token;
   };
 
-
-  App.readShapefile = function(event) {
-    shp(event.target.result).then(function(data) {
-      console.log("Got data!", data);
-      _.each(data.features, App.addFeature);
+  App.geocodeRow = function(row) {
+    var address = row.address + " " + row.city;
+    var url = App.makeURL(address);
+    console.log(url);
+    var req = $.get(url);
+    req.success(function(results){
+      App.addRow(results, row);
+      App.addFeature(results, row);
     });
   };
 
-
   App.readFile = function(event) {
+    console.log("READ FILE?");
     event.preventDefault();
     var file = event.dataTransfer.files[0];
     var reader = new FileReader();
 
-    reader.onload = App.readShapefile;
-    reader.readAsArrayBuffer(file);
+    console.log(Papa);
+    Papa.parse(file, {
+      header: true,
+      complete: function(results) {
+        console.log(results);
+        var slice = results.data.slice(0, LIMIT);
+        _.each(slice, App.geocodeRow);
+      }
+    });
   };
 
   return App;
